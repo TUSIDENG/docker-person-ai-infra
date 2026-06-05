@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # n8n 工作流引擎
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: runtime-n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=db-postgres  # 指向第一组的 Postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=dify     # 可以在 Postgres 内部单独为 n8n 建库，此处示意共用
+      - DB_POSTGRESDB_USER=postgres
+      - DB_POSTGRESDB_PASSWORD=your_secure_db_password
+      - EXECUTIONS_DATA_PRUNE=true       # 必须配置：定时修剪执行日志防止撑爆硬盘
+      - EXECUTIONS_DATA_MAX_AGE=72
+    volumes:
+      - ./data/n8n:/home/node/.n8n
+    networks:
+      - ai-bridge-network
+    restart: always
+
+  # OpenClaw 智能体运行时
+  openclaw:
+    image: openclaw/runtime:latest
+    container_name: runtime-openclaw
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENCLAW_ENV=production
+      - VECTOR_STORE_URL=http://db-qdrant:6333  # 指向第一组的 Qdrant
+      - VECTOR_STORE_API_KEY=your_secure_qdrant_key
+      - OPENAI_API_BASE=http://model-ollama:11434/v1 # 指向第二组的大模型网关
+      - OPENAI_API_KEY=ollama
+    volumes:
+      - ./data/openclaw:/app/workspaces
+      - /var/run/docker.sock:/var/run/docker.sock # 允许 OpenClaw 动态拉起独立隔离的安全执行微沙箱
+    networks:
+      - ai-bridge-network
+    restart: always
+
+networks:
+  ai-bridge-network:
+    external: true

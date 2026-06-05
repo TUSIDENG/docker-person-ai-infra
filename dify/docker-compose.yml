@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # Dify 后端 API 服务
+  dify-api:
+    image: langgenius/dify-api:latest
+    container_name: dify-api
+    environment:
+      - MODE=api
+      - SECRET_KEY=your_dify_secret_key
+      # 连接第一组的 Postgres
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=your_secure_db_password
+      - DB_HOST=db-postgres
+      - DB_PORT=5432
+      - DB_DATABASE=dify
+      # 连接第一组的 Redis
+      - REDIS_HOST=db-redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=your_secure_redis_password
+      - CELERY_BROKER_URL=redis://:your_secure_redis_password@db-redis:6379/1
+    volumes:
+      - ./data/storage:/app/api/storage
+    networks:
+      - ai-bridge-network
+    restart: always
+
+  # Dify 异步任务 Worker
+  dify-worker:
+    image: langgenius/dify-api:latest
+    container_name: dify-worker
+    environment:
+      - MODE=worker
+      - SECRET_KEY=your_dify_secret_key
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=your_secure_db_password
+      - DB_HOST=db-postgres
+      - DB_PORT=5432
+      - DB_DATABASE=dify
+      - REDIS_HOST=db-redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=your_secure_redis_password
+      - CELERY_BROKER_URL=redis://:your_secure_redis_password@db-redis:6379/1
+    volumes:
+      - ./data/storage:/app/api/storage
+    networks:
+      - ai-bridge-network
+    restart: always
+
+  # Dify 前端 Web 界面
+  dify-web:
+    image: langgenius/dify-web:latest
+    container_name: dify-web
+    environment:
+      - CONSOLE_API_URL=http://dify-api:5001
+      - APP_API_URL=http://dify-api:5001
+    ports:
+      - "80:3000"
+    networks:
+      - ai-bridge-network
+    restart: always
+
+networks:
+  ai-bridge-network:
+    external: true

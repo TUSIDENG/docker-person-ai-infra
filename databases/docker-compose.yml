@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # 统一的 PostgreSQL 关系库（供 Dify 和 n8n 共享）
+  postgres:
+    image: postgres:15-alpine
+    container_name: db-postgres
+    environment:
+      - POSTGRES_DB=dify
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=your_secure_db_password
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - ai-bridge-network
+    restart: always
+    ports:
+      - "5432:5432"
+
+  # 统一的 Redis 缓存与消息队列
+  redis:
+    image: redis:7.0-alpine
+    container_name: db-redis
+    command: redis-server --requirepass your_secure_redis_password
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - ai-bridge-network
+    restart: always
+    ports:
+      - "6379:6379"
+
+  # Qdrant 向量数据库
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: db-qdrant
+    environment:
+      - QDRANT__SERVICE__API_KEY=your_secure_qdrant_key
+    volumes:
+      - ./data/qdrant:/qdrant/storage
+    networks:
+      - ai-bridge-network
+    restart: always
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+
+networks:
+  ai-bridge-network:
+    external: true
