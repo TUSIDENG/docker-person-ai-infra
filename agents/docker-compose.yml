@@ -21,7 +21,7 @@ services:
     volumes:
       - ./data/n8n:/home/node/.n8n
     networks:
-      - ai-bridge-network
+      - ai-infra-network
     restart: always
 
   # OpenClaw 智能体运行时
@@ -42,9 +42,9 @@ services:
       - ./data/openclaw:/app/workspaces
       - ${DOCKER_SOCKET_HOST}:/var/run/docker.sock  # 允许 OpenClaw 动态拉起独立隔离的安全执行微沙箱
     networks:
-      - ai-bridge-network
+      - ai-infra-network
     restart: always
 
 networks:
-  ai-bridge-network:
+  ai-infra-network:
     external: true

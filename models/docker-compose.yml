@@ -10,7 +10,7 @@ services:
     ports:
       - "11434:11434"
     networks:
-      - ai-bridge-network
+      - ai-infra-network
     restart: always
     # 如果宿主机有英伟达显卡，请取消下方 deploy 的注释以开启 GPU 加速
     # deploy:
@@ -22,5 +22,5 @@ services:
     #           capabilities: [gpu]
 
 networks:
-  ai-bridge-network:
+  ai-infra-network:
     external: true

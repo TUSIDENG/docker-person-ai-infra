@@ -24,7 +24,7 @@ services:
     volumes:
       - ./data/storage:/app/api/storage
     networks:
-      - ai-bridge-network
+      - ai-infra-network
     restart: always
 
   # Dify 异步任务 Worker
@@ -46,7 +46,7 @@ services:
     volumes:
       - ./data/storage:/app/api/storage
     networks:
-      - ai-bridge-network
+      - ai-infra-network
     restart: always
 
   # Dify 前端 Web 界面
@@ -59,9 +59,9 @@ services:
     ports:
       - "80:3000"
     networks:
-      - ai-bridge-network
+      - ai-infra-network
     restart: always
 
 networks:
-  ai-bridge-network:
+  ai-infra-network:
     external: true
