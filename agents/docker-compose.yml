@@ -4,6 +4,8 @@ services:
   # n8n 工作流引擎
   n8n:
     image: docker.n8n.io/n8nio/n8n:latest
+    env_file:
+      - ../.env
     container_name: runtime-n8n
     ports:
       - "5678:5678"
@@ -25,6 +27,8 @@ services:
   # OpenClaw 智能体运行时
   openclaw:
     image: openclaw/runtime:latest
+    env_file:
+      - ../.env
     container_name: runtime-openclaw
     ports:
       - "8000:8000"
