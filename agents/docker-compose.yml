@@ -40,7 +40,7 @@ services:
       - OPENAI_API_KEY=ollama
     volumes:
       - ./data/openclaw:/app/workspaces
-      - /var/run/docker.sock:/var/run/docker.sock # 允许 OpenClaw 动态拉起独立隔离的安全执行微沙箱
+      - ${DOCKER_SOCKET_HOST}:/var/run/docker.sock  # 允许 OpenClaw 动态拉起独立隔离的安全执行微沙箱
     networks:
       - ai-bridge-network
     restart: always
