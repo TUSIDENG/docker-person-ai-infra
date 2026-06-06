@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  # Adminer - PostgreSQL 管理界面
+  adminer:
+    image: adminer:latest
+    container_name: db-adminer
+    env_file:
+      - ../.env
+    ports:
+      - "${ADMINER_PORT:-8080}:8080"
+    networks:
+      - ai-infra-network
+    restart: always
+
+  # Redis Insight - Redis 管理界面
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: db-redisinsight
+    env_file:
+      - ../.env
+    ports:
+      - "${REDISINSIGHT_PORT:-8001}:5540"
+    networks:
+      - ai-infra-network
+    restart: always
+
+networks:
+  ai-infra-network:
+    external: true
