@@ -65,9 +65,18 @@ docker network inspect ai-infra-network | grep Gateway
 curl http://172.18.0.1:8080
 ```
 
+**Docker 网关 IP 稳定性分析**：
+
+| 情况 | 网关 IP 稳定性 | 原因 |
+|------|---------------|------|
+| **网络持续存在** | ✅ 固定 | Docker 分配后不改变 |
+| **网络被删除重建** | ⚠️ 可能变化 | IP 由 Docker 重新分配 |
+| **Docker 服务重启** | ✅ 不变 | 配置持久化在磁盘 |
+| **WSL2/虚拟机重启** | ⚠️ 可能变化 | 虚拟机网桥 IP 可能改变 |
+
 **说明**：
 - **Linux 服务器**：网关 IP 固定，可直接使用
-- **Windows Docker Desktop**：网关 IP 可能在重启后变化，建议使用 `host.docker.internal`
+- **Windows Docker Desktop**：网关依赖 WSL2 虚拟机，建议使用 `host.docker.internal`
 
 ### 方式 3：使用宿主机真实 IP
 
