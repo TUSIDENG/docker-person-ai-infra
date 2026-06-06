@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # 大模型运行时（通过 Ollama 统一管理模型）
   ollama:
@@ -13,6 +11,10 @@ services:
       - ai-infra-network
     restart: always
     environment:
+      # Ollama 服务配置（让服务监听所有接口，CLI 通过 localhost 连接）
+      # - OLLAMA_HOST=127.0.0.1 # cli 可以成功调用
+      - OLLAMA_HOST=0.0.0.0 # 服务监听所有接口，其他容器可以访问
+      - OLLAMA_MODELS=/root/.ollama/models
       # 代理配置（默认为空，防止拉取识别）
       - HTTP_PROXY=${HTTP_PROXY:-}
       - HTTPS_PROXY=${HTTPS_PROXY:-}
@@ -29,7 +31,7 @@ services:
     #           count: all
     #           capabilities: [gpu]
 
-  # 模型初始化服务（自动拉取配置的模型）
+  # 模型初始化服务（启动时自动拉取配置的模型）
   ollama-pull:
     image: ollama/ollama:latest
     container_name: ${OLLAMA_PULL_CONTAINER_NAME:-model-ollama-pull}
@@ -48,8 +50,8 @@ services:
       - HTTPS_PROXY=${HTTPS_PROXY:-}
       - http_proxy=${HTTP_PROXY:-}
       - https_proxy=${HTTPS_PROXY:-}
-      - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1}
-      - no_proxy=${NO_PROXY:-localhost,127.0.0.1}
+      - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1,ollama}
+      - no_proxy=${NO_PROXY:-localhost,127.0.0.1,ollama}
     # 覆盖默认 entrypoint，使用 bash 执行命令
     entrypoint: ["/bin/bash", "-c"]
     command: >
@@ -83,6 +85,31 @@ services:
         echo '模型拉取完成！';
         ollama list;
       "
+
+  # Ollama CLI 服务（专门用于执行 ollama 命令）
+  ollama-cli:
+    image: ollama/ollama:latest
+    container_name: ${OLLAMA_CLI_CONTAINER_NAME:-model-ollama-cli}
+    depends_on:
+      ollama:
+        condition: service_started
+    volumes:
+      - ./data/ollama:/root/.ollama
+    networks:
+      - ai-infra-network
+    restart: no
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      # 代理配置
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - http_proxy=${HTTP_PROXY:-}
+      - https_proxy=${HTTPS_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1,ollama}
+      - no_proxy=${NO_PROXY:-localhost,127.0.0.1,ollama}
+    # 保持容器运行，等待命令执行
+    entrypoint: ["/bin/sh", "-c"]
+    command: "tail -f /dev/null"
 
 networks:
   ai-infra-network:
