@@ -1,17 +1,25 @@
 version: '3.8'
 
 services:
-  # 大模型运行时（通过 Ollama 统一管理 7B Gemma 与 Embedding 模型）
+  # 大模型运行时（通过 Ollama 统一管理模型）
   ollama:
     image: ollama/ollama:latest
-    container_name: model-ollama
+    container_name: ${OLLAMA_CONTAINER_NAME:-model-ollama}
     volumes:
       - ./data/ollama:/root/.ollama
     ports:
-      - "11434:11434"
+      - "${OLLAMA_PORT:-11434}:11434"
     networks:
       - ai-infra-network
     restart: always
+    environment:
+      # 代理配置（默认为空，防止拉取识别）
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - http_proxy=${HTTP_PROXY:-}
+      - https_proxy=${HTTPS_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1}
+      - no_proxy=${NO_PROXY:-localhost,127.0.0.1}
     # 如果宿主机有英伟达显卡，请取消下方 deploy 的注释以开启 GPU 加速
     # deploy:
     #   resources:
@@ -20,6 +28,61 @@ services:
     #         - driver: nvidia
     #           count: all
     #           capabilities: [gpu]
+
+  # 模型初始化服务（自动拉取配置的模型）
+  ollama-pull:
+    image: ollama/ollama:latest
+    container_name: ${OLLAMA_PULL_CONTAINER_NAME:-model-ollama-pull}
+    depends_on:
+      ollama:
+        condition: service_started
+    volumes:
+      - ./data/ollama:/root/.ollama
+    networks:
+      - ai-infra-network
+    restart: on-failure:3
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      # 代理配置
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - http_proxy=${HTTP_PROXY:-}
+      - https_proxy=${HTTPS_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1}
+      - no_proxy=${NO_PROXY:-localhost,127.0.0.1}
+    # 覆盖默认 entrypoint，使用 bash 执行命令
+    entrypoint: ["/bin/bash", "-c"]
+    command: >
+      "
+        echo '等待 Ollama 服务启动...';
+        sleep 10;
+        echo '开始拉取模型...';
+        
+        # 拉取大模型
+        if [ -n '${LLM_MODEL:-gemma2:9b}' ]; then
+          echo '拉取大模型: ${LLM_MODEL:-gemma2:9b}';
+          ollama pull ${LLM_MODEL:-gemma2:9b} || true;
+        fi
+        
+        # 拉取向量模型
+        if [ -n '${EMBEDDING_MODEL:-nomic-embed-text}' ]; then
+          echo '拉取向量模型: ${EMBEDDING_MODEL:-nomic-embed-text}';
+          ollama pull ${EMBEDDING_MODEL:-nomic-embed-text} || true;
+        fi
+        
+        # 拉取额外模型（可选）
+        if [ -n '${EXTRA_MODELS:-}' ]; then
+          for model in $(echo '${EXTRA_MODELS:-}' | tr ',' ' '); do
+            if [ -n '$$model' ]; then
+              echo '拉取额外模型: '$$model'';
+              ollama pull $$model || true;
+            fi
+          done
+        fi
+        
+        echo '模型拉取完成！';
+        ollama list;
+      "
 
 networks:
   ai-infra-network:
