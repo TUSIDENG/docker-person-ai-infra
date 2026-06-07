@@ -1,9 +1,17 @@
 version: '3.8'
 
 services:
-  # OpenClaw 智能体运行时
+  # OpenClaw 智能体运行时（自定义构建）
   openclaw:
-    image: ghcr.io/openclaw/openclaw:latest
+    build:
+      context: ./openclaw
+      dockerfile: Dockerfile
+      args:
+        - OPENCLAW_GATEWAY_PORT=${OPENCLAW_GATEWAY_PORT:-18799}
+        - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN:-your_openclaw_gateway_token}
+        - OPENAI_API_BASE=${OPENCLAW_OPENAI_API_BASE:-http://model-ollama:11434/v1}
+        - VECTOR_STORE_URL=${OPENCLAW_VECTOR_STORE_URL:-http://db-qdrant:6333}
+    image: openclaw/runtime:custom
     env_file:
       - ../.env
     container_name: runtime-openclaw
@@ -11,21 +19,16 @@ services:
       - "${OPENCLAW_PORT:-8000}:8000"
       - "${OPENCLAW_GATEWAY_PORT:-18799}:18799"
     environment:
-      - OPENCLAW_ENV=production
-      - OPENCLAW_GATEWAY_PORT=${OPENCLAW_GATEWAY_PORT:-18799}
-      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN:-}
-      - gateway.mode=local
+      # 覆盖默认配置（可选）
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN:-your_openclaw_gateway_token}
       - VECTOR_STORE_URL=${OPENCLAW_VECTOR_STORE_URL:-http://db-qdrant:6333}
-      - VECTOR_STORE_API_KEY=${OPENCLAW_VECTOR_STORE_API_KEY:-your_secure_qdrant_key}
-      - OPENAI_API_BASE=${OPENCLAW_OPENAI_API_BASE:-http://model-ollama:11434/v1}
-      - EMBEDDING_API_BASE=http://model-ollama:11434/v1
+      - VECTOR_STORE_API_KEY=${OPENCLAW_VECTOR_STORE_API_KEY:-}
     volumes:
       - ./data/openclaw:/home/node/.openclaw
       - ${DOCKER_SOCKET_HOST}:/var/run/docker.sock
     networks:
       - ai-infra-network
     restart: always
-    command: ["node", "openclaw.mjs", "gateway", "--allow-unconfigured"]
 
 networks:
   ai-infra-network:
