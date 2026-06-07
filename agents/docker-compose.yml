@@ -8,42 +8,54 @@ services:
       - ../.env
     container_name: runtime-n8n
     ports:
-      - "5678:5678"
+      - "${N8N_PORT:-5678}:5678"
     environment:
       - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=db-postgres  # 指向第一组的 Postgres
-      - DB_POSTGRESDB_PORT=5432
-      - DB_POSTGRESDB_DATABASE=dify     # 可以在 Postgres 内部单独为 n8n 建库，此处示意共用
-      - DB_POSTGRESDB_USER=postgres
-      - DB_POSTGRESDB_PASSWORD=your_secure_db_password
-      - EXECUTIONS_DATA_PRUNE=true       # 必须配置：定时修剪执行日志防止撑爆硬盘
-      - EXECUTIONS_DATA_MAX_AGE=72
+      - DB_POSTGRESDB_HOST=${N8N_DB_HOST:-db-postgres}
+      - DB_POSTGRESDB_PORT=${N8N_DB_PORT:-5432}
+      - DB_POSTGRESDB_DATABASE=${N8N_DB_NAME:-n8n}
+      - DB_POSTGRESDB_USER=${N8N_DB_USER:-postgres}
+      - DB_POSTGRESDB_PASSWORD=${N8N_DB_PASSWORD:-your_secure_db_password}
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=${N8N_EXECUTIONS_MAX_AGE:-72}
     volumes:
       - ./data/n8n:/home/node/.n8n
     networks:
       - ai-infra-network
     restart: always
 
-  # OpenClaw 智能体运行时
+  # OpenClaw 智能体运行时（自定义构建）
   openclaw:
-    image: openclaw/runtime:latest
+    build:
+      context: ./openclaw
+      dockerfile: Dockerfile
+    image: openclaw/runtime:custom  # 自定义镜像标签
     env_file:
       - ../.env
     container_name: runtime-openclaw
     ports:
-      - "8000:8000"
+      - "${OPENCLAW_PORT:-8000}:8000"
+      - "${OPENCLAW_GATEWAY_PORT:-18789}:18789"  # 健康检查端口
     environment:
       - OPENCLAW_ENV=production
-      - VECTOR_STORE_URL=http://db-qdrant:6333  # 指向第一组的 Qdrant
-      - VECTOR_STORE_API_KEY=your_secure_qdrant_key
-      - OPENAI_API_BASE=http://model-ollama:11434/v1 # 指向第二组的大模型网关
-      - OPENAI_API_KEY=ollama
+      - VECTOR_STORE_URL=${OPENCLAW_VECTOR_STORE_URL:-http://db-qdrant:6333}
+      - VECTOR_STORE_API_KEY=${OPENCLAW_VECTOR_STORE_API_KEY:-your_secure_qdrant_key}
+      - OPENAI_API_BASE=${OPENCLAW_OPENAI_API_BASE:-http://model-ollama:11434/v1}
+      # OPENAI_API_KEY=  # 自建 Ollama 服务不需要 API Key，留空
+      - EMBEDDING_API_BASE=http://model-ollama:11434/v1  # 向量模型 API
     volumes:
-      - ./data/openclaw:/app/workspaces
+      - ./data/openclaw:/app/workspaces        # 工作目录
+      - ./data/openclaw/config:/app/config     # 配置目录
       - ${DOCKER_SOCKET_HOST}:/var/run/docker.sock  # 允许 OpenClaw 动态拉起独立隔离的安全执行微沙箱
     networks:
       - ai-infra-network
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:18789/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 networks:
   ai-infra-network:
