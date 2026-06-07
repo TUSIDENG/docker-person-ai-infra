@@ -29,7 +29,8 @@ services:
     networks:
       - ai-infra-network
     restart: always
-    command: ["node", "openclaw.mjs", "gateway"]
+    command: ["node", "openclaw.mjs", "gateway", "--bind", "${OPENCLAW_GATEWAY_BIND:-lan}"]
+    user: node
 
 networks:
   ai-infra-network:

@@ -11,5 +11,9 @@ ENV ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-buil
 # 设置 PATH
 ENV PATH=/usr/local/bin:$PATH
 
+# 创建配置目录并设置权限
+RUN mkdir -p /home/node/.openclaw/workspace && \
+    chown -R node:node /home/node/.openclaw
+
 # 使用默认命令启动
 CMD ["node", "openclaw.mjs", "gateway"]
