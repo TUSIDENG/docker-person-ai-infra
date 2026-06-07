@@ -24,38 +24,31 @@ services:
       - ai-infra-network
     restart: always
 
-  # OpenClaw 智能体运行时（自定义构建）
+  # OpenClaw 智能体运行时
   openclaw:
-    build:
-      context: ./openclaw
-      dockerfile: Dockerfile
-    image: openclaw/runtime:custom  # 自定义镜像标签
+    image: ghcr.io/openclaw/openclaw:latest
     env_file:
       - ../.env
     container_name: runtime-openclaw
     ports:
       - "${OPENCLAW_PORT:-8000}:8000"
-      - "${OPENCLAW_GATEWAY_PORT:-18789}:18789"  # 健康检查端口
+      - "${OPENCLAW_GATEWAY_PORT:-18799}:18799"
     environment:
       - OPENCLAW_ENV=production
+      - OPENCLAW_GATEWAY_PORT=${OPENCLAW_GATEWAY_PORT:-18799}
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN:-}
+      - gateway.mode=local
       - VECTOR_STORE_URL=${OPENCLAW_VECTOR_STORE_URL:-http://db-qdrant:6333}
       - VECTOR_STORE_API_KEY=${OPENCLAW_VECTOR_STORE_API_KEY:-your_secure_qdrant_key}
       - OPENAI_API_BASE=${OPENCLAW_OPENAI_API_BASE:-http://model-ollama:11434/v1}
-      # OPENAI_API_KEY=  # 自建 Ollama 服务不需要 API Key，留空
-      - EMBEDDING_API_BASE=http://model-ollama:11434/v1  # 向量模型 API
+      - EMBEDDING_API_BASE=http://model-ollama:11434/v1
     volumes:
-      - ./data/openclaw:/app/workspaces        # 工作目录
-      - ./data/openclaw/config:/app/config     # 配置目录
-      - ${DOCKER_SOCKET_HOST}:/var/run/docker.sock  # 允许 OpenClaw 动态拉起独立隔离的安全执行微沙箱
+      - ./data/openclaw:/home/node/.openclaw
+      - ${DOCKER_SOCKET_HOST}:/var/run/docker.sock
     networks:
       - ai-infra-network
     restart: always
-    healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:18789/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    command: ["node", "openclaw.mjs", "gateway", "--allow-unconfigured"]
 
 networks:
   ai-infra-network:
