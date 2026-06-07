@@ -29,6 +29,7 @@ services:
     networks:
       - ai-infra-network
     restart: always
+    command: ["node", "openclaw.mjs", "gateway"]
 
 networks:
   ai-infra-network:

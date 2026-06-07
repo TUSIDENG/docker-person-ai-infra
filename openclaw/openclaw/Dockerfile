@@ -8,18 +8,8 @@ RUN npm config set registry https://registry.npmmirror.com
 ENV ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
 ENV ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/
 
-# Gateway 配置（从构建参数获取，默认值作为 fallback）
-ARG OPENCLAW_GATEWAY_PORT=18799
-ARG OPENCLAW_GATEWAY_TOKEN=your_openclaw_gateway_token
-ARG OPENAI_API_BASE=http://model-ollama:11434/v1
-ARG VECTOR_STORE_URL=http://db-qdrant:6333
+# 设置 PATH
+ENV PATH=/usr/local/bin:$PATH
 
-ENV OPENCLAW_GATEWAY_PORT=${OPENCLAW_GATEWAY_PORT}
-ENV OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
-ENV gateway.mode=local
-ENV OPENAI_API_BASE=${OPENAI_API_BASE}
-ENV EMBEDDING_API_BASE=${OPENAI_API_BASE}
-ENV VECTOR_STORE_URL=${VECTOR_STORE_URL}
-
-# 使用完整命令（基础镜像的 ENTRYPOINT 是 tini，会自动包装）
-CMD ["node", "openclaw.mjs", "gateway", "--allow-unconfigured"]
+# 使用默认命令启动
+CMD ["node", "openclaw.mjs", "gateway"]
