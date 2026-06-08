@@ -2,27 +2,50 @@ version: '3.8'
 
 services:
   # OpenClaw 智能体运行时（自定义构建）
-  openclaw:
+  openclaw-gateway:
     build:
       context: ./openclaw
       dockerfile: Dockerfile
-      args:
-        - OPENCLAW_GATEWAY_PORT=${OPENCLAW_GATEWAY_PORT:-18799}
-        - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN:-your_openclaw_gateway_token}
-        - OPENAI_API_BASE=${OPENCLAW_OPENAI_API_BASE:-http://model-ollama:11434/v1}
-        - VECTOR_STORE_URL=${OPENCLAW_VECTOR_STORE_URL:-http://db-qdrant:6333}
+      # args: # 从环境变量中获取配置,并转递给dockerfile
     image: openclaw/runtime:custom
     container_name: runtime-openclaw
     ports:
-      - "${OPENCLAW_PORT:-8000}:8000"
-      - "${OPENCLAW_GATEWAY_PORT:-18799}:18799"
+      - "${OPENCLAW_GATEWAY_PORT:-18789}:18789"
+      - "${OPENCLAW_BRIDGE_PORT:-18790}:18790"
+      - "${OPENCLAW_MSTEAMS_PORT:-3978}:3978"
     environment:
-      # 覆盖默认配置（可选）
-      - OPENAI_API_BASE=${OPENCLAW_OPENAI_API_BASE:-http://model-ollama:11434/v1}
-      - OPENAI_API_KEY=${OPENCLAW_OPENAI_API_KEY:-}
-      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN:-your_openclaw_gateway_token}
-      - VECTOR_STORE_URL=${OPENCLAW_VECTOR_STORE_URL:-http://db-qdrant:6333}
-      - VECTOR_STORE_API_KEY=${OPENCLAW_VECTOR_STORE_API_KEY:-}
+      HOME: /home/node
+      OPENCLAW_HOME: /home/node
+      TERM: xterm-256color
+      # Pin container-side state, workspace, and config paths so host values written to
+      # `.env` (used by Compose for the bind-mount source below) cannot leak
+      # into runtime code that resolves these env vars inside the container.
+      # Without this override, a macOS host path like /Users/<you>/.openclaw/...
+      # imported from .env caused first-reply `mkdir '/Users'` EACCES failures
+      # in Linux Docker (#77436).
+      OPENCLAW_STATE_DIR: /home/node/.openclaw
+      OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json
+      OPENCLAW_CONFIG_DIR: /home/node/.openclaw
+      OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-}
+      OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ${OPENCLAW_ALLOW_INSECURE_PRIVATE_WS:-}
+      # Empty means auto: Bonjour disables itself in detected containers.
+      # Set 0 only on host/macvlan/mDNS-capable networks; set 1 to force off.
+      OPENCLAW_DISABLE_BONJOUR: ${OPENCLAW_DISABLE_BONJOUR:-}
+      # OpenTelemetry export is outbound OTLP/HTTP from the Gateway. Prometheus
+      # uses the existing authenticated Gateway route; it does not need a port.
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: ${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-}
+      OTEL_SEMCONV_STABILITY_OPT_IN: ${OTEL_SEMCONV_STABILITY_OPT_IN:-}
+      OPENCLAW_OTEL_PRELOADED: ${OPENCLAW_OTEL_PRELOADED:-}
+      CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
+      CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
+      CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
+      TZ: ${OPENCLAW_TZ:-UTC}
     volumes:
       - ./data/openclaw:/home/node/.openclaw
       - ${DOCKER_SOCKET_HOST}:/var/run/docker.sock
@@ -31,6 +54,42 @@ services:
     restart: always
     command: ["node", "openclaw.mjs", "gateway", "--bind", "${OPENCLAW_GATEWAY_BIND:-lan}"]
     user: node
+
+  openclaw-cli:
+    build:
+      context: ./openclaw
+      dockerfile: Dockerfile
+    image: openclaw/runtime:custom
+    container_name: runtime-openclaw
+    ports:
+      - "${OPENCLAW_PORT:-8000}:8000"
+      - "${OPENCLAW_GATEWAY_PORT:-18799}:18799"
+    environment:
+      HOME: /home/node
+      OPENCLAW_HOME: /home/node
+      TERM: xterm-256color
+      # Pin container-side state, workspace, and config paths so host values written to
+      # `.env` cannot leak into runtime code via the env_file import (#77436).
+      OPENCLAW_STATE_DIR: /home/node/.openclaw
+      OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json
+      OPENCLAW_CONFIG_DIR: /home/node/.openclaw
+      OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-}
+      OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ${OPENCLAW_ALLOW_INSECURE_PRIVATE_WS:-}
+      BROWSER: echo
+      CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
+      CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
+      CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
+      TZ: ${OPENCLAW_TZ:-UTC}
+    volumes:
+      - ./data/openclaw:/home/node/.openclaw
+      - ${DOCKER_SOCKET_HOST}:/var/run/docker.sock
+    networks:
+      - ai-infra-network
+    restart: always
+    entrypoint: ["node", "dist/index.js"]
+    depends_on:
+      - openclaw-gateway
 
 networks:
   ai-infra-network:
