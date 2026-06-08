@@ -12,14 +12,14 @@ services:
         - OPENAI_API_BASE=${OPENCLAW_OPENAI_API_BASE:-http://model-ollama:11434/v1}
         - VECTOR_STORE_URL=${OPENCLAW_VECTOR_STORE_URL:-http://db-qdrant:6333}
     image: openclaw/runtime:custom
-    env_file:
-      - ../.env
     container_name: runtime-openclaw
     ports:
       - "${OPENCLAW_PORT:-8000}:8000"
       - "${OPENCLAW_GATEWAY_PORT:-18799}:18799"
     environment:
       # 覆盖默认配置（可选）
+      - OPENAI_API_BASE=${OPENCLAW_OPENAI_API_BASE:-http://model-ollama:11434/v1}
+      - OPENAI_API_KEY=${OPENCLAW_OPENAI_API_KEY:-}
       - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN:-your_openclaw_gateway_token}
       - VECTOR_STORE_URL=${OPENCLAW_VECTOR_STORE_URL:-http://db-qdrant:6333}
       - VECTOR_STORE_API_KEY=${OPENCLAW_VECTOR_STORE_API_KEY:-}

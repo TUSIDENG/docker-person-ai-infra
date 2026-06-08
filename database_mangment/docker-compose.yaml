@@ -5,8 +5,6 @@ services:
   adminer:
     image: adminer:latest
     container_name: db-adminer
-    env_file:
-      - ../.env
     ports:
       - "${ADMINER_PORT:-8080}:8080"
     networks:
@@ -17,8 +15,6 @@ services:
   redisinsight:
     image: redis/redisinsight:latest
     container_name: db-redisinsight
-    env_file:
-      - ../.env
     ports:
       - "${REDISINSIGHT_PORT:-8001}:5540"
     networks:

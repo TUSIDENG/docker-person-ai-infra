@@ -4,8 +4,6 @@ services:
   # Dify 后端 API 服务
   dify-api:
     image: langgenius/dify-api:latest
-    env_file:
-      - ../.env
     container_name: dify-api
     environment:
       - MODE=api
