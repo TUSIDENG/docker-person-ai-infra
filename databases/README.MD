@@ -51,4 +51,4 @@ docker-compose up -d qdrant
 ```
 
 ## 管理页面访问
-- Qdrant管理页面: http://localhost:6333，访问后输入QDRANT_API_KEY即可访问。
+- Qdrant管理页面: http://localhost:6333/dashboard，访问后输入QDRANT_API_KEY即可访问。
