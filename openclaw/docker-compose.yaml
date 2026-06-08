@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # OpenClaw 智能体运行时（自定义构建）
   openclaw-gateway:
@@ -10,10 +8,11 @@ services:
     image: openclaw/runtime:custom
     container_name: runtime-openclaw
     ports:
-      - "${OPENCLAW_GATEWAY_PORT:-18789}:18789"
-      - "${OPENCLAW_BRIDGE_PORT:-18790}:18790"
-      - "${OPENCLAW_MSTEAMS_PORT:-3978}:3978"
+      - "${OPENCLAW_GATEWAY_PORT:-18789}:${OPENCLAW_GATEWAY_PORT:-18789}"
+      - "${OPENCLAW_BRIDGE_PORT:-18790}:${OPENCLAW_BRIDGE_PORT:-18790}"
+      - "${OPENCLAW_MSTEAMS_PORT:-3978}:${OPENCLAW_MSTEAMS_PORT:-3978}"
     environment:
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
       HOME: /home/node
       OPENCLAW_HOME: /home/node
       TERM: xterm-256color
@@ -52,7 +51,7 @@ services:
     networks:
       - ai-infra-network
     restart: always
-    command: ["node", "openclaw.mjs", "gateway", "--bind", "${OPENCLAW_GATEWAY_BIND:-lan}"]
+    command: ["node", "dist/index.js", "gateway", "--bind", "${OPENCLAW_GATEWAY_BIND:-lan}"]
     user: node
 
   openclaw-cli:
@@ -60,11 +59,10 @@ services:
       context: ./openclaw
       dockerfile: Dockerfile
     image: openclaw/runtime:custom
-    container_name: runtime-openclaw
-    ports:
-      - "${OPENCLAW_PORT:-8000}:8000"
-      - "${OPENCLAW_GATEWAY_PORT:-18799}:18799"
+    network_mode: "service:openclaw-gateway" # 与openclaw-gateway容器共享网络
+    container_name: runtime-openclaw-cli
     environment:
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
       HOME: /home/node
       OPENCLAW_HOME: /home/node
       TERM: xterm-256color
@@ -84,8 +82,6 @@ services:
     volumes:
       - ./data/openclaw:/home/node/.openclaw
       - ${DOCKER_SOCKET_HOST}:/var/run/docker.sock
-    networks:
-      - ai-infra-network
     restart: always
     entrypoint: ["node", "dist/index.js"]
     depends_on:
