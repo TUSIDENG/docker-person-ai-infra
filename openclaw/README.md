@@ -5,7 +5,11 @@
 ### 初始化配置openclaw
 --build参数用于在启动时构建镜像，确保构建参数与环境变量一致
 ```bash
-docker compose run --rm --no-deps --entrypoint node openclaw-gateway dist/index.js onboard --mode local --no-install-daemon --build
+# 建造openclaw镜像
+docker compose build openclaw-gateway
+
+# 初始化配置openclaw
+docker compose run --rm --no-deps --entrypoint node openclaw-gateway dist/index.js onboard --mode local --no-install-daemon
 ```
 
 ### 启动openclaw
