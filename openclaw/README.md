@@ -34,6 +34,9 @@ docker compose run --rm openclaw-cli models set nvidia/moonshotai/kimi-k2.6
 # 配置opencode-zen密钥，并设置默认模型
 docker compose run --rm openclaw-cli onboard --auth-choice opencode-zen
 
+# 配置deepseek模型
+docker compose run --rm openclaw-cli onboard --auth-choice deepseek-api-key
+
 ## 展示模型
 docker compose run --rm openclaw-cli models list --provider opencode
 

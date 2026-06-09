@@ -1,0 +1,14 @@
+config:
+  name: "demo"
+  description: "演示子代理：用于展示什么是子代理及其基本功能"
+  model: "nvidia/moonshotai/kimi-k2.6"
+  tools:
+    allow:
+      - read
+      - edit
+      - write
+      - exec
+      - web_search
+      - web_fetch
+      - memory_search
+      - memory_get

@@ -252,3 +252,25 @@ This is a starting point. Add your own conventions, style, and rules as you figu
 ## Related
 
 - [Default AGENTS.md](/reference/AGENTS.default)
+
+---
+
+## 子代理注册表
+
+### 环境说明
+
+- **OPENCLAW_STATE_DIR**: `/home/node/.openclaw`
+- **OPENCLAW_CONFIG_PATH**: `/home/node/.openclaw/openclaw.json`
+- **OPENCLAW_CONFIG_DIR**: `/home/node/.openclaw`
+- **OPENCLAW_WORKSPACE_DIR**: `/home/node/.openclaw/workspace`
+
+子代理的工作区文件统一放在 `$OPENCLAW_WORKSPACE_DIR/<agent-name>/` 下，即 `~/.openclaw/workspace/<agent-name>/`。
+
+### 已注册子代理
+
+#### demo
+- **功能**：演示子代理，用于展示什么是子代理及其基本功能
+- **注册时间**：2026-06-09
+- **状态**：活跃
+- **说明**：教育/展示性质，帮助理解子代理的概念和作用
+- **工作区**：`$OPENCLAW_WORKSPACE_DIR/demo`（即 `~/.openclaw/workspace/demo`）
