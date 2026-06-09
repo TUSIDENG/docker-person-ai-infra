@@ -24,12 +24,17 @@ docker compose exec openclaw-gateway bash
 ## 启动后配置openclaw
 
 ### 使用openclaw-cli容器配置openclaw
+
+##### 配置模型
 ```bash
 # 配置openclaw使用NVIDIA API密钥
 docker compose run --rm openclaw-cli onboard --auth-choice nvidia-api-key
 
 ## 配置nvidia模型
 docker compose run --rm openclaw-cli models set nvidia/moonshotai/kimi-k2.6
+
+# 配置openai模型
+docker compose run --rm openclaw-cli onboard --auth-choice openai-api-key
 
 # 配置opencode-zen密钥，并设置默认模型
 docker compose run --rm openclaw-cli onboard --auth-choice opencode-zen
@@ -51,3 +56,42 @@ docker compose run --rm openclaw-cli devices approve <requestId>
 ```bash
 docker compose restart openclaw-gateway
 ```
+
+## 配置向量模型
+使用技能memory-vector-config配置向量模型：
+如果配置为ollama，openclaw.json配置如下：
+```json5
+{
+  models: {
+    providers: {
+      // ... 其他 provider ...
+      "ollama-local": {
+        api: "ollama",
+        baseUrl: "http://ollama:11434",     // Docker 网络中的 Ollama 地址
+        models: [
+          { id: "nomic-embed-text" },
+          { id: "bge-m3" }
+        ]
+      }
+    }
+  },
+  agents: {
+    defaults: {
+      memorySearch: {
+        provider: "ollama-local",           // 指向自定义 provider
+        model: "bge-m3"                     // 使用的 embedding 模型
+      }
+    }
+  }
+}
+```
+
+### 查看向量配置状态
+```bash
+# 查看向量配置状态
+docker compose exec openclaw-gateway openclaw memory status
+
+# 重新索引向量，单独指定agent。切换模型时，需要重新索引向量
+docker compose exec openclaw-gateway openclaw memory index --force --agent main
+```
+
