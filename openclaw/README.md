@@ -47,7 +47,10 @@ docker compose run --rm openclaw-cli models list --provider opencode
 
 ## 配置默认模型
 docker compose run --rm openclaw-cli config set agents.defaults.model.primary "opencode/mimo-v2.5"
+```
 
+### 其他常用命令
+```bash
 # 审核设备
 docker compose run --rm openclaw-cli devices approve <requestId>
 ```
@@ -55,6 +58,14 @@ docker compose run --rm openclaw-cli devices approve <requestId>
 ### 配置后重启openclaw-gateway容器
 ```bash
 docker compose restart openclaw-gateway
+```
+
+## 升级openclaw
+```bash
+# 升级openclaw镜像
+docker compose build openclaw-gateway
+# 重新构建openclaw-gateway容器
+docker compose up openclaw-gateway -d
 ```
 
 ## 配置向量模型
