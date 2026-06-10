@@ -1,5 +1,10 @@
 # Models部署指南
 
+启用ollama服务：
+```bash
+docker compose up ollama -d
+```
+
 ## ollama 使用
 
 常用命令
@@ -20,19 +25,22 @@ ollama rm gemma4:12b
 通过docker compose使用
 ```bash
 # 查看模型列表（使用专门的 ollama-cli 服务）
-docker compose exec ollama-cli ollama list
+docker compose run --rm ollama-cli list
 
 # 下载模型
-docker compose exec ollama-cli ollama pull gemma4:12b
+docker compose run --rm ollama-cli pull gemma4:12b
 
 # 卸载单个模型
-docker compose exec ollama-cli ollama rm gemma4:12b
+docker compose run --rm ollama-cli rm gemma4:12b
+
+# 安装向量模型
+docker compose run --rm ollama-cli pull bge-m3
 
 # 卸载向量模型
-docker compose exec ollama-cli ollama rm bge-m3
+docker compose run --rm ollama-cli rm bge-m3
 
 # 查看模型详情
-docker compose exec ollama-cli ollama show gemma4:12b
+docker compose run --rm ollama-cli show gemma4:12b
 ```
 
 ### ollama 模型加载原理
