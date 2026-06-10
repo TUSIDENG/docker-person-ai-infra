@@ -1,5 +1,5 @@
 # docker-person-ai-infra
-使用docker部署个人ai基础设施，基于windows+docker desktop实现。Linux/MacOS也可以兼容，如果部署有问题，请提交issue。
+使用docker部署个人ai基础设施，基于windows+docker desktop实现。
 
 ## 创建网络
 启用所有容器前，先创建ai-infra-network网络
@@ -8,9 +8,6 @@
 # 用于ai-infra中容器通信
 docker network create ai-infra-network
 ```
-### Docker 网络模式
-[详细说明](Docker-Network.md)
-
 
 ## 容器组分类
 - databases：数据容器组，负责存储数据。
