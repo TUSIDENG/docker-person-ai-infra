@@ -14,8 +14,12 @@ docker network create ai-infra-network
 
 ## 容器组分类
 - databases：数据容器组，负责存储数据。
+    - 说明文档详见:[Databases.md](databases/README.md)
 - database_management：数据库管理容器组，由Adminer,Redis Insight等组成。
+    - 说明文档详见:[Database-Management.md](database_mangment/README.md)
 - ollama：ollama模型服务容器组，负责管理ollama模型。
+    - 说明文档详见:[Ollama.md](ollama/README.md)
 - openclaw：openclaw模型容器组，负责运行openclaw服务。
+    - 说明文档详见:[Openclaw.md](openclaw/README.md)
 - n8n：n8n模型容器组，负责运行n8n服务。暂未启用。
 - dify：dify模型容器组，负责运行dify服务。暂未启用。
