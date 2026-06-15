@@ -1,4 +1,16 @@
-# Agent application
+# OpenCLAW application
+
+## 功能
+### 已实现功能
+* 启动初始化配置
+* 配置模型
+* 创建子智能体(agent)和技能
+* 配置向量数据库
+* 配置channel
+
+### 待实现功能
+* 配置Lobster审批流
+* 配置沙盒(sandbox)环境，可选
 
 ## 启动openclaw
 
