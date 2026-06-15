@@ -12,6 +12,8 @@ docker compose build openclaw-gateway
 docker compose run --rm --no-deps --entrypoint node openclaw-gateway dist/index.js onboard --mode local --no-install-daemon
 ```
 
+初始化配置详见:[SetUp.md](SetUp.md)
+
 ### 启动openclaw
 
 ```bash
@@ -49,11 +51,21 @@ docker compose run --rm openclaw-cli models list --provider opencode
 docker compose run --rm openclaw-cli config set agents.defaults.model.primary "opencode/mimo-v2.5"
 ```
 
-### 其他常用命令
+##### 其他常用命令
 ```bash
 # 审核设备
 docker compose run --rm openclaw-cli devices approve <requestId>
 ```
+
+##### 配置channel
+```bash
+# 配置微信BOT
+docker compose run --rm openclaw-cli channels login --channel openclaw-weixin
+
+# 重启openclaw-gateway容器
+docker compose restart openclaw-gateway
+```
+详情参见:[Channel_Set_Up.md](Channel_Set_Up.md)
 
 ### 配置后重启openclaw-gateway容器
 ```bash
@@ -61,6 +73,8 @@ docker compose restart openclaw-gateway
 ```
 
 ## 升级openclaw
+
+### 升级openclaw镜像并且重启容器
 ```bash
 # 升级openclaw镜像
 docker compose build openclaw-gateway
@@ -100,9 +114,9 @@ docker compose up openclaw-gateway -d
 ### 查看向量配置状态
 ```bash
 # 查看向量配置状态
-docker compose exec openclaw-gateway openclaw memory status
+docker compose run --rm openclaw-cli memory status --deep
 
 # 重新索引向量，单独指定agent。切换模型时，需要重新索引向量
-docker compose exec openclaw-gateway openclaw memory index --force --agent main
+docker compose run --rm openclaw-cli memory index --force --agent main
 ```
 
