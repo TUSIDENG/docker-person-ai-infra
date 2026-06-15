@@ -1,10 +1,10 @@
 ---
 name: "memory-vector-config"
-description: "配置 OpenCLAW 向量记忆搜索，支持 ollama/openai/gemini/deepinfra/nvidia"
+description: "配置 OpenCLAW 向量记忆搜索，支持 ollama/openai/gemini/deepinfra/nvidia，以及 Ollama 端口转发"
 metadata:
   maintainer: "Main Agent"
   scope: "向量搜索配置"
-  version: "1.1.3"
+  version: "1.2.0"
 ---
 
 # 向量记忆搜索配置
@@ -77,6 +77,90 @@ docker compose exec ollama ollama pull bge-m3
 ```bash
 openclaw memory index --force --agent main
 openclaw memory status --agent main
+```
+
+### 5. 端口转发（runtime 硬编码 127.0.0.1:11434 时的备选方案）
+
+> **背景：** OpenCLAW runtime 内部的嵌入客户端在走 `api: "ollama"` 类型时，会硬编码连接 `127.0.0.1:11434`（容器的 loopback），**不读取自定义 provider 的 `baseUrl`**。即使你在 `ollama-local` 中设了 `baseUrl: "http://ollama:11434"`，运行时 `memory_search` 仍然尝试连 `127.0.0.1:11434`。
+
+**解决方案：** 在容器内启动一个 TCP 端口转发器，将 `127.0.0.1:11434` 的流量转发到实际运行的 Ollama 地址（如 `ollama:11434`）。
+
+#### 步骤
+
+##### a) 创建转发脚本
+
+在 `~/.openclaw/port-forward-ollama.js` 写入：
+
+```javascript
+const net = require('net');
+const TARGET = { host: 'ollama', port: 11434 };
+const LISTEN_PORT = 11434;
+
+const server = net.createServer((client) => {
+  const upstream = net.connect(TARGET, () => {
+    client.pipe(upstream);
+    upstream.pipe(client);
+  });
+  client.on('error', () => upstream.destroy());
+  upstream.on('error', () => client.destroy());
+});
+
+server.listen(LISTEN_PORT, '127.0.0.1', () => {
+  console.log(`Forwarding 127.0.0.1:${LISTEN_PORT} -> ${TARGET.host}:${TARGET.port}`);
+});
+```
+
+> `TARGET.host` 替换为实际 Ollama 可达的地址，如 `ollama`（Docker service name）或 `host.docker.internal`。
+
+##### b) 启动转发器
+
+```bash
+# 检查转发器是否存活
+pgrep -f "port-forward-ollama" || \
+  nohup node ~/.openclaw/port-forward-ollama.js > ~/.openclaw/port-forward.log 2>&1 &
+
+# 验证
+curl -s http://127.0.0.1:11434/api/tags | head -c 80
+```
+
+预期输出包含 Ollama 的模型列表 JSON，即转发成功。
+
+##### c) 预热 Embedding 模型（避免首次请求超时）
+
+```bash
+curl -s --max-time 60 http://127.0.0.1:11434/api/embed \
+  -d '{"model":"bge-m3","input":"warmup"}' > /dev/null
+```
+
+##### d) 验证与生效
+
+```bash
+# 重建索引
+openclaw memory index --force --agent main
+
+# 检查状态
+openclaw memory status --agent main --deep
+```
+
+成功标志：`Embeddings: ready`，`Vector store: ready`。
+
+##### e) 自愈保活（可选）
+
+转发器偶尔可能因容器重启或进程异常退出而挂掉。创建一个自愈启动脚本：
+
+```bash
+#!/bin/bash
+# ~/.openclaw/keep-forwarder-alive.sh
+while true; do
+  pgrep -f "port-forward-ollama" > /dev/null || \
+    nohup node ~/.openclaw/port-forward-ollama.js >> ~/.openclaw/port-forward.log 2>&1 &
+  sleep 30
+done
+```
+
+```bash
+# 后台运行
+nohup bash ~/.openclaw/keep-forwarder-alive.sh > /dev/null 2>&1 &
 ```
 
 ---
@@ -251,6 +335,7 @@ openclaw memory status --agent main
 | Provider | Provider ID | API Key | 网络 | 默认模型 |
 |----------|-------------|---------|------|---------|
 | **Ollama** (默认) | `ollama` / 自定 | ❌ 不需要 | 本地 | `nomic-embed-text` |
+| **Ollama + 端口转发** | `ollama` / 自定 | ❌ 不需要 | 本地 (127.0.0.1) | `bge-m3` |
 | **OpenAI** | `openai` | ✅ 需要 | 云端 | `text-embedding-3-small` |
 | **Gemini** | `gemini` | ✅ 需要 | 云端 | `gemini-embedding-001` |
 | **DeepInfra** | `deepinfra` | ✅ 需要 | 云端 | `BAAI/bge-m3` |
@@ -293,4 +378,5 @@ openclaw memory index --force --agent main
 | `Provider not detected` | API Key 未配置 | 运行 onboard 先配 auth |
 | `no memory files found` | 没有记忆文件 | 创建 `memory/` 目录并写入 `.md` 文件 |
 | 配置报错 `Invalid input` | provider 配置位置错误 | `ollama-local` 必须在 `models.providers` 下，**不在** `agents.defaults.models` |
+| `Embeddings: unavailable` + `connect ECONNREFUSED 127.0.0.1:11434` | Ollama 不在 127.0.0.1 上；runtime 硬编码了该地址 | 启动端口转发器：`node ~/.openclaw/port-forward-ollama.js &` |
 | NVIDIA 报向量维度不匹配 | 未设置 queryInputType | 添加 `queryInputType: "query"` 和 `documentInputType: "passage"` |
